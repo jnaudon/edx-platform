@@ -212,10 +212,12 @@
         },
 
         initialize: function( obj ) {
+            var el = $('#incourse-reverify-container');
             this.submitButton = obj.submitButton || "";
             this.modelAttribute = obj.modelAttribute || "";
             this.errorModel = obj.errorModel || null;
             this.backend = this.backends[obj.backendName] || obj.backend;
+            this.captureSound =  el.data('capture-sound');
 
             this.backend.initialize({
                 wrapper: "#camera",
@@ -259,6 +261,8 @@
 
             // Show the capture button
             $captureBtn.removeClass('is-hidden');
+            $( "#webcam_capture_button", this.el ).removeClass('is-hidden');
+            $( "#webcam_capture_sound", this.el ).attr('src', this.captureSound);
 
             return this;
         },
@@ -276,6 +280,7 @@
             // Go back to the initial button state
             $( "#webcam_reset_button", this.el ).addClass('is-hidden');
             $( "#webcam_capture_button", this.el ).removeClass('is-hidden');
+            $( this.submitButton ).attr('title', '');
         },
 
         capture_by_enter: function(event){
@@ -296,6 +301,7 @@
                 // Trigger an event which parent views can use to fire a
                 // business intelligence event
                 this.trigger( 'imageCaptured' );
+                this.capture_sound();
 
                 // Hide the capture button, and show the reset button
                 $( "#webcam_capture_button", this.el ).addClass('is-hidden');
@@ -306,6 +312,7 @@
 
                 // Enable the submit button
                 this.setSubmitButtonEnabled( true );
+                this.setSubmitButtonFocused( );
             }
         },
 
@@ -334,6 +341,17 @@
                 .toggleClass( 'is-disabled', !isEnabled )
                 .prop( 'disabled', !isEnabled )
                 .attr('aria-disabled', !isEnabled);
+        },
+
+        setSubmitButtonFocused: function( ){
+            $( this.submitButton )
+                .trigger('focus')
+                .attr('title', gettext( 'Photo Captured successfully '));
+        },
+
+        capture_sound: function(){
+            $( '#webcam_capture_sound' )[0]
+                .play();
         },
 
         isMobileDevice: function() {
