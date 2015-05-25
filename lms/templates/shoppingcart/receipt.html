@@ -108,73 +108,73 @@ from courseware.courses import course_image_url, get_course_about_section, get_c
               <div class="row-inside">
                 <p>
                   <b>${_('Company Name')}:</b>
-                  <label>
+                  <span>
                     % if order.company_name:
                       ${order.company_name}
                     % else:
-                      N/A
+                      ${_('N/A')}
                     % endif
-                  </label>
+                  </span>
                 </p>
               </div>
               <div class="row-inside">
                 <p>
                   <b>${_('Purchase Order Number')}:</b>
-                  <label>
+                  <span>
                     % if order.customer_reference_number:
                       ${order.customer_reference_number}
                     % else:
-                      N/A
+                      ${_('N/A')}
                     % endif
-                  </label>
+                  </span>
                 </p>
               </div>
               <div class="row-inside">
                 <p>
                   <b>${_('Company Contact Name')}:</b>
-                  <label>
+                  <span>
                     % if order.company_contact_name:
                       ${order.company_contact_name}
                     % else:
-                      N/A
+                      ${_('N/A')}
                     % endif
-                  </label>
+                  </span>
                 </p>
               </div>
               <div class="row-inside">
                 <p>
                   <b>${_('Company Contact Email')}:</b>
-                  <label>
+                  <span>
                     % if order.company_contact_email:
                       ${order.company_contact_email}
                     % else:
-                      N/A
+                      ${_('N/A')}
                     % endif
-                  </label>
+                  </span>
                 </p>
               </div>
               <div class="row-inside">
                 <p>
                   <b>${_('Recipient Name')}:</b>
-                  <label>
+                  <span>
                     % if order.recipient_name:
                       ${order.recipient_name}
                     % else:
-                      N/A
+                      ${_('N/A')}
                     % endif
-                  </label>
+                  </span>
                 </p>
               </div>
               <div class="row-inside">
                 <p>
                   <b>${_('Recipient Email')}:</b>
-                  <label>
+                  <span>
                     % if order.recipient_email:
                       ${order.recipient_email}
                     % else:
-                      N/A
+                      ${_('N/A')}
                     % endif
-                  </label>
+                  </span>
                 </p>
               </div>
             </div>
@@ -183,97 +183,97 @@ from courseware.courses import course_image_url, get_course_about_section, get_c
             <div class="row-inside">
               <p>
                 <b>${_('Card Type')}:</b>
-                <label>
+                <span>
                   % if order.bill_to_cardtype:
-                    ${order.bill_to_cardtype}
+                    ${_('{bill_to_cardtype}'.format(bill_to_cardtype=order.bill_to_cardtype))}
                   % else:
-                    N/A
+                    ${_('N/A')}
                   % endif
-                </label>
+                </span>
               </p>
             </div>
             <div class="row-inside">
               <p>
                 <b>${_('Credit Card Number')}:</b>
-                <label>
+                <span>
                   % if order.bill_to_ccnum:
                     ${order.bill_to_ccnum}
                   % else:
-                    N/A
+                    ${_('N/A')}
                   % endif
-                </label>
+                </span>
               </p>
             </div>
             <div class="row-inside">
               <p>
                 <b>${_('Name')}:</b>
-                <label>
+                <span>
                   % if order.bill_to_first or order.bill_to_last:
                     ${order.bill_to_first} ${order.bill_to_last}
                   % else:
-                    N/A
+                    ${_('N/A')}
                   % endif
-                </label>
+                </span>
               </p>
             </div>
             <div class="row-inside">
               <p>
                 <b>${_('Address 1')}:</b>
-                <label>
+                <span>
                   % if order.bill_to_street1:
                     ${order.bill_to_street1}
                   % else:
-                    N/A
+                    ${_('N/A')}
                   % endif
-                </label>
+                </span>
               </p>
             </div>
             <div class="row-inside">
               <p>
                 <b>${_('Address 2')}:</b>
-                <label>
+                <span>
                   % if order.bill_to_street2:
                     ${order.bill_to_street2}
                   % else:
-                    N/A
+                    ${_('N/A')}
                   % endif
-                </label>
+                </span>
               </p>
             </div>
             <div class="row-inside">
               <p>
                 <b>${_('City')}:</b>
-                <label>
+                <span>
                   % if order.bill_to_city:
                     ${order.bill_to_city}
                   % else:
-                    N/A
+                    ${_('N/A')}
                   % endif
-                </label>
+                </span>
               </p>
             </div>
             <div class="row-inside">
               <p>
                 <b>${_('State')}:</b>
-                <label>
+                <span>
                   % if order.bill_to_state:
-                    ${order.bill_to_state}
+                    ${_('{bill_to_state}'.format(bill_to_state=order.bill_to_state))}
                   % else:
-                    N/A
+                    ${_('N/A')}
                   % endif
-                </label>
+                </span>
               </p>
             </div>
             <div class="row-inside">
               <p>
                 <b>${_('Country')}:</b>
-                <label>
+                <span>
                   % if order.bill_to_country:
-                    ${order.bill_to_country.upper()}
+                    ${_('{bill_to_country}'.format(bill_to_country=order.bill_to_country.upper()))}
                   % else:
-                    N/A
+                    ${_('N/A')}
                   % endif
-                </label>
+                </span>
               </p>
             </div>
           </div>

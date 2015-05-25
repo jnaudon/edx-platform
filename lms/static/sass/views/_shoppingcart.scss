@@ -651,10 +651,11 @@ $light-border: 1px solid $gray-l5;
         vertical-align: top;
       }
 
-      label {
+      span {
         @extend %t-copy-sub1;
         display: inline-block;
         margin: 0;
+        cursor: text;
         width: ($baseline*60);
         word-wrap: break-word;
         font-style: normal;
