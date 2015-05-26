@@ -69,6 +69,11 @@ $light-border: 1px solid $gray-l5;
     vertical-align: top;
   }
 
+  img {
+    width: 100%;
+    height: 100%;
+  }
+
   .enrollment-details {
     @include float(left);
     margin-bottom: ($baseline);
@@ -284,11 +289,6 @@ $light-border: 1px solid $gray-l5;
     .image {
       @include float(left);
       width: ($baseline*11);
-
-      img {
-        width: 100%;
-        height: 100%;
-      }
     }
 
     .data-input {
