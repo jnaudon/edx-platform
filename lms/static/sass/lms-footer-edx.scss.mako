@@ -5,6 +5,8 @@
 
 // libs and resets *do not edit*
 @import 'bourbon/bourbon'; // lib - bourbon
+@import 'susy/susy';
+@import 'breakpoint/breakpoint';
 @import 'vendor/bi-app/bi-app-ltr'; // set the layout for left to right languages
 
 // BASE  *default edX offerings*
@@ -12,6 +14,7 @@
 
 // base - utilities
 @import 'base/variables';
+@import 'base/variables-ltr';
 @import 'base/mixins';
 
 ## THEMING
