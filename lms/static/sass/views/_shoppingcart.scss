@@ -658,6 +658,8 @@ $light-border: 1px solid $gray-l5;
         cursor: text;
         width: ($baseline*60);
         word-wrap: break-word;
+        color: #3c3c3c;
+        font-family: $sans-serif;
         font-style: normal;
       }
     }
