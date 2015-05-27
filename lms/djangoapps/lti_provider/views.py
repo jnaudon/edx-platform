@@ -10,10 +10,7 @@ from django.http import HttpResponseBadRequest, HttpResponseForbidden, Http404
 from django.views.decorators.csrf import csrf_exempt
 import logging
 
-from courseware.access import has_access
-from courseware.courses import get_course_with_access
-from courseware.module_render import get_module_by_usage_id
-from edxmako.shortcuts import render_to_response
+from courseware.module_render import render_chromeless_module
 from lti_provider.signature_validator import SignatureValidator
 from lms_xblock.runtime import unquote_slashes
 from opaque_keys.edx.keys import CourseKey, UsageKey
@@ -171,31 +168,7 @@ def render_courseware(request, lti_params):
     context to render the courseware.
     """
     usage_key = lti_params['usage_key']
-    course_key = lti_params['course_key']
-    user = request.user
-    course = get_course_with_access(user, 'load', course_key)
-    staff = has_access(request.user, 'staff', course)
-    instance, _dummy = get_module_by_usage_id(
-        request,
-        unicode(course_key),
-        unicode(usage_key)
-    )
-
-    fragment = instance.render('student_view', context=request.GET)
-
-    context = {
-        'fragment': fragment,
-        'course': course,
-        'disable_accordion': True,
-        'allow_iframing': True,
-        'disable_header': True,
-        'disable_footer': True,
-        'disable_tabs': True,
-        'staff_access': staff,
-        'xqa_server': settings.FEATURES.get('XQA_SERVER', 'http://example.com/xqa'),
-    }
-
-    return render_to_response('courseware/courseware.html', context)
+    return render_chromeless_module(request, usage_key)
 
 
 def parse_course_and_usage_keys(course_id, usage_id):

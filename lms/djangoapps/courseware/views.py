@@ -39,7 +39,7 @@ from courseware.courses import (
 )
 from courseware.masquerade import setup_masquerade
 from courseware.model_data import FieldDataCache
-from .module_render import toc_for_course, get_module_for_descriptor, get_module
+from .module_render import toc_for_course, get_module_for_descriptor, get_module, render_chromeless_module
 from .entrance_exams import (
     course_has_entrance_exam,
     get_entrance_exam_content,
@@ -1339,7 +1339,8 @@ def generate_user_cert(request, course_id):
 
 
 def _track_successful_certificate_generation(user_id, course_id):  # pylint: disable=invalid-name
-    """Track an successfully certificate generation event.
+    """
+    Track a successful certificate generation event.
 
     Arguments:
         user_id (str): The ID of the user generting the certificate.
@@ -1365,3 +1366,13 @@ def _track_successful_certificate_generation(user_id, course_id):  # pylint: dis
                 }
             }
         )
+
+
+@require_GET
+def render_xblock(request, usage_key_string):
+    """
+    Renders a chromeless html page of an xblock.
+    """
+    usage_key = UsageKey.from_string(usage_key_string)
+    usage_key = usage_key.replace(course_key=modulestore().fill_in_run(usage_key.course_key))
+    return render_chromeless_module(request, usage_key)

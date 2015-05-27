@@ -236,7 +236,7 @@ class RenderCoursewareTest(TestCase):
         """
         request = build_run_request()
         views.render_courseware(request, ALL_PARAMS.copy())
-        self.course_mock.assert_called_with(request.user, 'load', COURSE_KEY)
+        self.course_mock.assert_called_with(request.user, 'load', COURSE_KEY, check_enrollment=True)
 
     def test_has_access(self):
         """
