@@ -11,12 +11,11 @@ from django.core.urlresolvers import reverse
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 
-import collections
 import json
 
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
-from courseware.tabs import get_course_tab_list
+from courseware.tabs import get_course_tab_list, CourseTab
 from student.tests.factories import UserFactory
 from notes import utils, api, models
 
@@ -61,6 +60,11 @@ class CourseTabTest(ModuleStoreTestCase):
         self.course = CourseFactory.create()
         self.user = UserFactory()
 
+    def enable_notes(self):
+        """Enable notes and add the tab to the course."""
+        self.course.tabs.append(CourseTab.from_json({"type": "notes", "name": "My Notes"}))
+        self.course.advanced_modules = ["notes"]
+
     def has_notes_tab(self, course, user):
         """ Returns true if the current course and user have a notes tab, false otherwise. """
         request = RequestFactory().request()
@@ -81,8 +85,10 @@ class CourseTabTest(ModuleStoreTestCase):
             self.assertFalse(self.has_notes_tab(self.course, self.user))
 
     def test_course_tab_visible(self):
-        self.course.advanced_modules = ["notes"]
+        self.enable_notes()
         self.assertTrue(self.has_notes_tab(self.course, self.user))
+        self.course.advanced_modules = []
+        self.assertFalse(self.has_notes_tab(self.course, self.user))
 
 
 class ApiTest(TestCase):
