@@ -1015,7 +1015,9 @@ def results_callback(request):
             )
             if credit_requirement is not None:
                 try:
-                    CreditRequirementStatus.add_requirement_status(attempt.user.username, credit_requirement, "satisfied")
+                    CreditRequirementStatus.add_requirement_status(
+                        attempt.user.username, credit_requirement, "satisfied"
+                    )
                 except Exception as exp:  # pylint: disable=broad-except
                     log.warn(exp)
 
