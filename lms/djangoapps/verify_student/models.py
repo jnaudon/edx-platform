@@ -8,16 +8,17 @@ of a student over a period of time. Right now, the only models are the abstract
 `SoftwareSecurePhotoVerification`. The hope is to keep as much of the
 photo verification process as generic as possible.
 """
-from datetime import datetime, timedelta
-from email.utils import formatdate
 import functools
 import json
 import logging
+from datetime import datetime, timedelta
+from email.utils import formatdate
 
-from course_modes.models import CourseMode
 import pytz
 import requests
 import uuid
+from lazy import lazy
+from opaque_keys.edx.keys import UsageKey
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -29,6 +30,7 @@ from django.utils.translation import ugettext as _, ugettext_lazy
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
 from config_models.models import ConfigurationModel
+from course_modes.models import CourseMode
 from model_utils.models import StatusModel
 from model_utils import Choices
 from reverification.models import MidcourseReverificationWindow
@@ -36,6 +38,7 @@ from verify_student.ssencrypt import (
     random_aes_key, encrypt_and_encode,
     generate_signed_message, rsa_encrypt
 )
+from xmodule.modulestore.django import modulestore
 from xmodule_django.models import CourseKeyField
 
 
@@ -958,21 +961,16 @@ class SoftwareSecurePhotoVerification(PhotoVerification):
 
 
 class VerificationCheckpoint(models.Model):
-    """Represents a point at which a user is challenged to reverify his or her identity.
-        Each checkpoint is uniquely identified by a (course_id, checkpoint_name) tuple.
     """
-
-    CHECKPOINT_CHOICES = (
-        ("midterm", "midterm"),
-        ("final", "final"),
-    )
-
+    Represents a point at which a user is asked to re-verify his/her identity.
+    Each checkpoint is uniquely identified by a (course_id, checkpoint_location) tuple.
+    """
     course_id = CourseKeyField(max_length=255, db_index=True)
-    checkpoint_name = models.CharField(max_length=32, choices=CHECKPOINT_CHOICES)
+    checkpoint_location = models.CharField(max_length=255, null=True, blank=True)
     photo_verification = models.ManyToManyField(SoftwareSecurePhotoVerification)
 
     class Meta:  # pylint: disable=missing-docstring, old-style-class
-        unique_together = (('course_id', 'checkpoint_name'),)
+        unique_together = (('course_id', 'checkpoint_location'),)
 
     def __unicode__(self):
         """Unicode representation of the checkpoint. """
@@ -980,6 +978,12 @@ class VerificationCheckpoint(models.Model):
             checkpoint=self.checkpoint_name,
             course=self.course_id
         )
+
+    @lazy
+    def checkpoint_name(self):
+        """Lazy method for getting checkpoint name of reverification block."""
+        checkpoint_key = UsageKey.from_string(self.checkpoint_location)
+        return modulestore().get_item(checkpoint_key).related_assessment
 
     def add_verification_attempt(self, verification_attempt):
         """ Add the verification attempt in M2M relation of photo_verification
@@ -990,7 +994,7 @@ class VerificationCheckpoint(models.Model):
         Returns:
             None
         """
-        self.photo_verification.add(verification_attempt)  # pylint: disable=no-member
+        self.photo_verification.add(verification_attempt)
 
     def get_user_latest_status(self, user_id):
         """ Return the latest status of the given checkpoint attempt by user
@@ -1002,12 +1006,12 @@ class VerificationCheckpoint(models.Model):
             VerificationStatus object if found any else None
         """
         try:
-            return self.checkpoint_status.filter(user_id=user_id).latest()  # pylint: disable=E1101
+            return self.checkpoint_status.filter(user_id=user_id).latest()
         except ObjectDoesNotExist:
             return None
 
     @classmethod
-    def get_verification_checkpoint(cls, course_id, checkpoint_name):
+    def get_verification_checkpoint(cls, course_id, checkpoint_location):
         """Get the verification checkpoint for given course_id and checkpoint name
 
         Arguments:
@@ -1018,18 +1022,18 @@ class VerificationCheckpoint(models.Model):
             VerificationCheckpoint object if exists otherwise None
         """
         try:
-            return cls.objects.get(course_id=course_id, checkpoint_name=checkpoint_name)
+            return cls.objects.get(course_id=course_id, checkpoint_location=checkpoint_location)
         except cls.DoesNotExist:
             return None
 
 
 class VerificationStatus(models.Model):
-    """A verification status represents a user’s progress
-    through the verification process for a particular checkpoint
-    Model is an append-only table that represents the user status changes in
-    verification process
     """
-
+    This model is an append-only table that represents the user status changes
+    during a verification process.
+    A verification status represents a user’s progress through the verification
+    process for a particular checkpoint.
+    """
     VERIFICATION_STATUS_CHOICES = (
         ("submitted", "submitted"),
         ("approved", "approved"),
@@ -1044,32 +1048,24 @@ class VerificationStatus(models.Model):
     response = models.TextField(null=True, blank=True)
     error = models.TextField(null=True, blank=True)
 
-    # This field is used to save location of Reverification module in courseware
-    location_id = models.CharField(
-        null=True,
-        blank=True,
-        max_length=255,
-        help_text=ugettext_lazy("Usage id of Reverification XBlock.")
-    )
-
     class Meta(object):  # pylint: disable=missing-docstring
         get_latest_by = "timestamp"
         verbose_name = "Verification Status"
         verbose_name_plural = "Verification Statuses"
 
     @classmethod
-    def add_verification_status(cls, checkpoint, user, status, location_id=None):
+    def add_verification_status(cls, checkpoint, user, status):
         """ Create new verification status object
 
         Arguments:
             checkpoint(VerificationCheckpoint): VerificationCheckpoint object
             user(User): user object
             status(str): String representing the status from VERIFICATION_STATUS_CHOICES
-            location_id(str): Usage key of Reverification XBlock
+
         Returns:
             None
         """
-        cls.objects.create(checkpoint=checkpoint, user=user, status=status, location_id=location_id)
+        cls.objects.create(checkpoint=checkpoint, user=user, status=status)
 
     @classmethod
     def add_status_from_checkpoints(cls, checkpoints, user, status):
@@ -1079,21 +1075,15 @@ class VerificationStatus(models.Model):
             checkpoints(list): list of VerificationCheckpoint objects
             user(User): user object
             status(str): String representing the status from VERIFICATION_STATUS_CHOICES
+
         Returns:
             None
         """
         for checkpoint in checkpoints:
-            # get 'location_id' from last entry (if it exists) and add it in
-            # new entry
-            try:
-                location_id = cls.objects.filter(checkpoint=checkpoint).latest().location_id
-            except cls.DoesNotExist:
-                location_id = None
-
-            cls.objects.create(checkpoint=checkpoint, user=user, status=status, location_id=location_id)
+            cls.objects.create(checkpoint=checkpoint, user=user, status=status)
 
     @classmethod
-    def get_user_attempts(cls, user_id, course_key, related_assessment, location_id):
+    def get_user_attempts(cls, user_id, course_key, related_assessment_location):
         """
         Get re-verification attempts against a user for a given 'checkpoint'
         and 'course_id'.
@@ -1101,8 +1091,7 @@ class VerificationStatus(models.Model):
         Arguments:
             user_id(str): User Id string
             course_key(str): A CourseKey of a course
-            related_assessment(str): Verification checkpoint name
-            location_id(str): Location of Reverification XBlock in courseware
+            related_assessment_location(str): Verification checkpoint name
 
         Returns:
             count of re-verification attempts
@@ -1111,8 +1100,7 @@ class VerificationStatus(models.Model):
         return cls.objects.filter(
             user_id=user_id,
             checkpoint__course_id=course_key,
-            checkpoint__checkpoint_name=related_assessment,
-            location_id=location_id,
+            checkpoint__checkpoint_location=related_assessment_location,
             status="submitted"
         ).count()
 
@@ -1124,11 +1112,11 @@ class VerificationStatus(models.Model):
             photo_verification(SoftwareSecurePhotoVerification): SoftwareSecurePhotoVerification object
 
         Return:
-            Location Id of xblock if any else empty string
+            Location Id of XBlock if any else empty string
         """
         try:
-            ver_status = cls.objects.filter(checkpoint__photo_verification=photo_verification).latest()
-            return ver_status.location_id
+            verification_status = cls.objects.filter(checkpoint__photo_verification=photo_verification).latest()
+            return verification_status.checkpoint.checkpoint_location
         except cls.DoesNotExist:
             return ""
 

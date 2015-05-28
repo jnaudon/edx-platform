@@ -862,14 +862,14 @@ def submit_photos_for_verification(request):
 
 
 def _compose_message_reverification_email(
-        course_key, user_id, relates_assessment, photo_verification, status, is_secure
+        course_key, user_id, related_assessment, photo_verification, status, is_secure
 ):  # pylint: disable=invalid-name
     """ Composes subject and message for email
 
     Args:
         course_key(CourseKey): CourseKey object
         user_id(str): User Id
-        relates_assessment(str): related assessment name
+        related_assessment(str): related assessment name
         photo_verification(QuerySet/SoftwareSecure): A query set of SoftwareSecure objects or SoftwareSecure objec
         status(str): approval status
         is_secure(Bool): Is running on secure protocol or not
@@ -888,14 +888,14 @@ def _compose_message_reverification_email(
         context = {
             "status": status,
             "course_name": course.display_name_with_default,
-            "assessment": relates_assessment,
+            "assessment": related_assessment,
             "courseware_url": redirect_url
         }
 
         reverification_block = modulestore().get_item(usage_key)
         # Allowed attempts is 1 if not set on verification block
         allowed_attempts = 1 if reverification_block.attempts == 0 else reverification_block.attempts
-        user_attempts = VerificationStatus.get_user_attempts(user_id, course_key, relates_assessment, location_id)
+        user_attempts = VerificationStatus.get_user_attempts(user_id, course_key, related_assessment)
         left_attempts = allowed_attempts - user_attempts
         is_attempt_allowed = left_attempts > 0
         verification_open = True
@@ -914,7 +914,7 @@ def _compose_message_reverification_email(
             'verify_student_incourse_reverify',
             args=(
                 unicode(course_key),
-                unicode(relates_assessment),
+                unicode(related_assessment),
                 unicode(location_id)
             )
         )
@@ -1038,10 +1038,10 @@ def results_callback(request):
         if checkpoints:
             user_id = attempt.user.id
             course_key = checkpoints[0].course_id
-            relates_assessment = checkpoints[0].checkpoint_name
+            related_assessment = checkpoints[0].checkpoint_name
 
             subject, message = _compose_message_reverification_email(
-                course_key, user_id, relates_assessment, attempt, status, request.is_secure()
+                course_key, user_id, related_assessment, attempt, status, request.is_secure()
             )
 
             _send_email(user_id, subject, message)
@@ -1255,11 +1255,21 @@ class InCourseReverifyView(View):
     Does not need to worry about pricing
     """
     @method_decorator(login_required)
-    def get(self, request, course_id, checkpoint_name, usage_id):
-        """ Display the view for face photo submission"""
-        # Check the in-course re-verification is enabled or not
+    def get(self, request, course_id, usage_id):
+        """
+        Display the view for face photo submission
 
+        Args:
+            request(HttpRequest): HttpRequest object
+            course_id(str): A string of course id
+            usage_id(str): Location of Reverification XBlock in courseware
+
+        Returns:
+            HttpResponse
+        """
+        # Check that in-course re-verification is enabled or not
         incourse_reverify_enabled = InCourseReverificationConfiguration.current().enabled
+
         if not incourse_reverify_enabled:
             log.error(
                 u"In-course reverification is not enabled.  "
@@ -1275,49 +1285,51 @@ class InCourseReverifyView(View):
             log.error(u"Could not find course %s for in-course reverification.", course_key)
             raise Http404
 
-        checkpoint = VerificationCheckpoint.get_verification_checkpoint(course_key, checkpoint_name)
+        checkpoint = VerificationCheckpoint.get_verification_checkpoint(course_key, usage_id)
         if checkpoint is None:
             log.error(
                 u"No verification checkpoint exists for the "
-                u"course %s and checkpoint name %s.",
-                course_key, checkpoint_name
+                u"course %s and checkpoint location %s.",
+                course_key, usage_id
             )
             raise Http404
 
-        init_verification = SoftwareSecurePhotoVerification.get_initial_verification(user)
-        if not init_verification:
+        initial_verification = SoftwareSecurePhotoVerification.get_initial_verification(user)
+        if not initial_verification:
             return self._redirect_no_initial_verification(user, course_key)
 
         # emit the reverification event
         self._track_reverification_events(
-            EVENT_NAME_USER_ENTERED_INCOURSE_REVERIFY_VIEW, user.id, course_id, checkpoint_name
+            EVENT_NAME_USER_ENTERED_INCOURSE_REVERIFY_VIEW, user.id, course_id, checkpoint.checkpoint_name
         )
 
         context = {
             'course_key': unicode(course_key),
             'course_name': course.display_name_with_default,
-            'checkpoint_name': checkpoint_name,
+            'checkpoint_name': checkpoint.checkpoint_name,
             'platform_name': settings.PLATFORM_NAME,
             'usage_id': usage_id
         }
         return render_to_response("verify_student/incourse_reverify.html", context)
 
     @method_decorator(login_required)
-    def post(self, request, course_id, checkpoint_name, usage_id):
-        """Submits the re-verification attempt to SoftwareSecure
+    def post(self, request, course_id, usage_id):
+        """
+        Submits the re-verification attempt to SoftwareSecure
 
         Args:
             request(HttpRequest): HttpRequest object
             course_id(str): Course Id
-            checkpoint_name(str): Checkpoint name
+            usage_id(str): Location of Reverification XBlock in courseware
 
         Returns:
             HttpResponse with status_code 400 if photo is missing or any error
-            or redirect to the verification flow if initial verification doesn't exist otherwise
-            HttpsResponse with status code 200
+            or redirect to the verification flow if initial verification
+            doesn't exist otherwise HttpsResponse with status code 200
         """
         # Check the in-course re-verification is enabled or not
         incourse_reverify_enabled = InCourseReverificationConfiguration.current().enabled
+
         if not incourse_reverify_enabled:
             raise Http404
 
@@ -1329,14 +1341,16 @@ class InCourseReverifyView(View):
             raise Http404(u"Invalid course_key or usage_key")
 
         course = modulestore().get_course(course_key)
-        checkpoint = VerificationCheckpoint.get_verification_checkpoint(course_key, checkpoint_name)
+        checkpoint = VerificationCheckpoint.get_verification_checkpoint(course_key, usage_id)
         if checkpoint is None:
-            log.error("Checkpoint is not defined. Could not submit verification attempt for user %s",
-                      request.user.id)
+            log.error(
+                "Checkpoint is not defined. Could not submit verification attempt for user %s", request.user.id
+            )
+
             context = {
                 'course_key': unicode(course_key),
                 'course_name': course.display_name_with_default,
-                'checkpoint_name': checkpoint_name,
+                'checkpoint_name': checkpoint.checkpoint_name,
                 'error': True,
                 'errorMsg': _("No checkpoint found"),
                 'platform_name': settings.PLATFORM_NAME,
@@ -1353,11 +1367,11 @@ class InCourseReverifyView(View):
                 request.user, request.POST['face_image'], init_verification.photo_id_key
             )
             checkpoint.add_verification_attempt(attempt)
-            VerificationStatus.add_verification_status(checkpoint, user, "submitted", usage_id)
+            VerificationStatus.add_verification_status(checkpoint, user, "submitted")
 
             # emit the reverification event
             self._track_reverification_events(
-                EVENT_NAME_USER_SUBMITTED_INCOURSE_REVERIFY, user.id, course_id, checkpoint_name
+                EVENT_NAME_USER_SUBMITTED_INCOURSE_REVERIFY, user.id, course_id, checkpoint.checkpoint_name
             )
 
             try:
@@ -1382,15 +1396,17 @@ class InCourseReverifyView(View):
             return HttpResponseBadRequest(msg)
 
     def _track_reverification_events(self, event_name, user_id, course_id, checkpoint):  # pylint: disable=invalid-name
-        """Track re-verification events for user against course checkpoints
+        """
+        Track re-verification events for a user against a course reverification
+        checkpoint.
 
         Arguments:
-            user_id (str): The ID of the user generting the certificate.
-            course_id (unicode):  id associated with the course
-            checkpoint (str):  checkpoint name
+            user_id (str): The ID of the user
+            course_id (unicode): ID associated with the course
+            checkpoint (str): Checkpoint name
+
         Returns:
             None
-
         """
         log.info(
             u"In-course reverification: event %s occurred for user %s in course %s at checkpoint %s",
