@@ -73,7 +73,6 @@ class StaffGradingTab(CourseViewType):
     name = 'staff_grading'
     title = _("Staff grading")
     view_name = "staff_grading"
-    is_dynamic = True
 
     @classmethod
     def is_enabled(cls, course, django_settings, user=None):  # pylint: disable=unused-argument
