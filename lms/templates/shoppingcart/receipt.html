@@ -107,8 +107,8 @@ from courseware.courses import course_image_url, get_course_about_section, get_c
             <div class="row">
               <div class="row-inside">
                 <p>
-                  <b>${_('Company Name')}:</b>
-                  <span>
+                  <b class="billing-detail-label">${_('Company Name')}:</b>
+                  <span class="billing-detail-value">
                     % if order.company_name:
                       ${order.company_name}
                     % else:
@@ -119,8 +119,8 @@ from courseware.courses import course_image_url, get_course_about_section, get_c
               </div>
               <div class="row-inside">
                 <p>
-                  <b>${_('Purchase Order Number')}:</b>
-                  <span>
+                  <b class="billing-detail-label">${_('Purchase Order Number')}:</b>
+                  <span class="billing-detail-value">
                     % if order.customer_reference_number:
                       ${order.customer_reference_number}
                     % else:
@@ -131,8 +131,8 @@ from courseware.courses import course_image_url, get_course_about_section, get_c
               </div>
               <div class="row-inside">
                 <p>
-                  <b>${_('Company Contact Name')}:</b>
-                  <span>
+                  <b class="billing-detail-label">${_('Company Contact Name')}:</b>
+                  <span class="billing-detail-value">
                     % if order.company_contact_name:
                       ${order.company_contact_name}
                     % else:
@@ -143,8 +143,8 @@ from courseware.courses import course_image_url, get_course_about_section, get_c
               </div>
               <div class="row-inside">
                 <p>
-                  <b>${_('Company Contact Email')}:</b>
-                  <span>
+                  <b class="billing-detail-label">${_('Company Contact Email')}:</b>
+                  <span class="billing-detail-value">
                     % if order.company_contact_email:
                       ${order.company_contact_email}
                     % else:
@@ -155,8 +155,8 @@ from courseware.courses import course_image_url, get_course_about_section, get_c
               </div>
               <div class="row-inside">
                 <p>
-                  <b>${_('Recipient Name')}:</b>
-                  <span>
+                  <b class="billing-detail-label">${_('Recipient Name')}:</b>
+                  <span class="billing-detail-value">
                     % if order.recipient_name:
                       ${order.recipient_name}
                     % else:
@@ -167,8 +167,8 @@ from courseware.courses import course_image_url, get_course_about_section, get_c
               </div>
               <div class="row-inside">
                 <p>
-                  <b>${_('Recipient Email')}:</b>
-                  <span>
+                  <b class="billing-detail-label">${_('Recipient Email')}:</b>
+                  <span class="billing-detail-value">
                     % if order.recipient_email:
                       ${order.recipient_email}
                     % else:
@@ -182,8 +182,8 @@ from courseware.courses import course_image_url, get_course_about_section, get_c
           <div class="row">
             <div class="row-inside">
               <p>
-                <b>${_('Card Type')}:</b>
-                <span>
+                <b class="billing-detail-label">${_('Card Type')}:</b>
+                <span class="billing-detail-value">
                   % if order.bill_to_cardtype:
                     ${order.bill_to_cardtype}
                   % else:
@@ -194,8 +194,8 @@ from courseware.courses import course_image_url, get_course_about_section, get_c
             </div>
             <div class="row-inside">
               <p>
-                <b>${_('Credit Card Number')}:</b>
-                <span>
+                <b class="billing-detail-label">${_('Credit Card Number')}:</b>
+                <span class="billing-detail-value">
                   % if order.bill_to_ccnum:
                     ${order.bill_to_ccnum}
                   % else:
@@ -206,8 +206,8 @@ from courseware.courses import course_image_url, get_course_about_section, get_c
             </div>
             <div class="row-inside">
               <p>
-                <b>${_('Name')}:</b>
-                <span>
+                <b class="billing-detail-label">${_('Name')}:</b>
+                <span class="billing-detail-value">
                   % if order.bill_to_first or order.bill_to_last:
                     ${order.bill_to_first} ${order.bill_to_last}
                   % else:
@@ -218,8 +218,8 @@ from courseware.courses import course_image_url, get_course_about_section, get_c
             </div>
             <div class="row-inside">
               <p>
-                <b>${_('Address 1')}:</b>
-                <span>
+                <b class="billing-detail-label">${_('Address 1')}:</b>
+                <span class="billing-detail-value">
                   % if order.bill_to_street1:
                     ${order.bill_to_street1}
                   % else:
@@ -230,8 +230,8 @@ from courseware.courses import course_image_url, get_course_about_section, get_c
             </div>
             <div class="row-inside">
               <p>
-                <b>${_('Address 2')}:</b>
-                <span>
+                <b class="billing-detail-label">${_('Address 2')}:</b>
+                <span class="billing-detail-value">
                   % if order.bill_to_street2:
                     ${order.bill_to_street2}
                   % else:
@@ -242,8 +242,8 @@ from courseware.courses import course_image_url, get_course_about_section, get_c
             </div>
             <div class="row-inside">
               <p>
-                <b>${_('City')}:</b>
-                <span>
+                <b class="billing-detail-label">${_('City')}:</b>
+                <span class="billing-detail-value">
                   % if order.bill_to_city:
                     ${order.bill_to_city}
                   % else:
@@ -254,8 +254,8 @@ from courseware.courses import course_image_url, get_course_about_section, get_c
             </div>
             <div class="row-inside">
               <p>
-                <b>${_('State')}:</b>
-                <span>
+                <b class="billing-detail-label">${_('State')}:</b>
+                <span class="billing-detail-value">
                   % if order.bill_to_state:
                     ${order.bill_to_state}
                   % else:
@@ -266,8 +266,8 @@ from courseware.courses import course_image_url, get_course_about_section, get_c
             </div>
             <div class="row-inside">
               <p>
-                <b>${_('Country')}:</b>
-                <span>
+                <b class="billing-detail-label">${_('Country')}:</b>
+                <span class="billing-detail-value">
                   % if order.bill_to_country:
                     ${order.bill_to_country}
                   % else:
