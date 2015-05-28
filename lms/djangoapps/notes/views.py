@@ -1,3 +1,8 @@
+"""
+Views to support the edX Notes feature.
+"""
+
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import Http404
 
@@ -44,8 +49,7 @@ class NotesCourseViewType(EnrolledCourseViewType):
     view_name = "notes"
 
     @classmethod
-    def is_enabled(cls, course, settings, user=None):
+    def is_enabled(cls, course, user=None):
         if "notes" not in course.advanced_modules:
             return False
-
-        return settings.FEATURES.get('ENABLE_STUDENT_NOTES') and (user is None or user.is_authenticated())
+        return settings.FEATURES.get('ENABLE_STUDENT_NOTES')

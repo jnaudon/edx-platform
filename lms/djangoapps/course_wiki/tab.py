@@ -3,6 +3,7 @@ These callables are used by django-wiki to check various permissions
 a user has on an article.
 """
 
+from django.conf import settings
 from django.utils.translation import ugettext as _
 
 from courseware.tabs import EnrolledCourseViewType
@@ -19,12 +20,12 @@ class WikiCourseViewType(EnrolledCourseViewType):
     is_hideable = True
 
     @classmethod
-    def is_enabled(cls, course, django_settings, user=None):
+    def is_enabled(cls, course, user=None):
         """
         Returns true if the wiki is enabled and the specified user is enrolled or has staff access.
         """
-        if not django_settings.WIKI_ENABLED:
+        if not settings.WIKI_ENABLED:
             return False
         if course.allow_public_wiki_access:
             return True
-        return super(WikiCourseViewType, cls).is_enabled(course, django_settings, user=user)
+        return super(WikiCourseViewType, cls).is_enabled(course, user=user)

@@ -17,7 +17,7 @@ class EnrolledCourseViewType(CourseViewType):
     A base class for any view types that require a user to be enrolled.
     """
     @classmethod
-    def is_enabled(cls, course, django_settings, user=None):
+    def is_enabled(cls, course, user=None):
         if not user:
             return True
         return CourseEnrollment.is_enrolled(user, course.id) or has_access(user, 'staff', course, course.id)
@@ -46,7 +46,7 @@ class CourseInfoViewType(CourseViewType):
     is_movable = False
 
     @classmethod
-    def is_enabled(cls, course, django_settings, user=None):
+    def is_enabled(cls, course, user=None):
         return True
 
 
@@ -60,8 +60,8 @@ class SyllabusCourseViewType(EnrolledCourseViewType):
     view_name = 'syllabus'
 
     @classmethod
-    def is_enabled(cls, course, django_settings, user=None):  # pylint: disable=unused-argument
-        if not super(SyllabusCourseViewType, cls).is_enabled(course, settings, user=user):
+    def is_enabled(cls, course, user=None):  # pylint: disable=unused-argument
+        if not super(SyllabusCourseViewType, cls).is_enabled(course, user=user):
             return False
         return hasattr(course, 'syllabus_present') and course.syllabus_present
 
@@ -77,8 +77,8 @@ class ProgressCourseViewType(EnrolledCourseViewType):
     is_hideable = True
 
     @classmethod
-    def is_enabled(cls, course, django_settings, user=None):  # pylint: disable=unused-argument
-        if not super(ProgressCourseViewType, cls).is_enabled(course, settings, user=user):
+    def is_enabled(cls, course, user=None):  # pylint: disable=unused-argument
+        if not super(ProgressCourseViewType, cls).is_enabled(course, user=user):
             return False
         return not course.hide_progress_tab
 
@@ -92,7 +92,7 @@ class TextbookCourseViewsBase(CourseViewType):
     is_collection = True
 
     @classmethod
-    def is_enabled(cls, course, django_settings, user=None):  # pylint: disable=unused-argument
+    def is_enabled(cls, course, user=None):  # pylint: disable=unused-argument
         return user is None or user.is_authenticated()
 
     @classmethod
@@ -112,9 +112,9 @@ class TextbookCourseViews(TextbookCourseViewsBase):
     priority = None
 
     @classmethod
-    def is_enabled(cls, course, django_settings, user=None):  # pylint: disable=unused-argument
-        parent_is_enabled = super(TextbookCourseViews, cls).is_enabled(course, settings, user)
-        return django_settings.FEATURES.get('ENABLE_TEXTBOOK') and parent_is_enabled
+    def is_enabled(cls, course, user=None):  # pylint: disable=unused-argument
+        parent_is_enabled = super(TextbookCourseViews, cls).is_enabled(course, user)
+        return settings.FEATURES.get('ENABLE_TEXTBOOK') and parent_is_enabled
 
     @classmethod
     def items(cls, course):
@@ -174,7 +174,7 @@ class StaticCourseViewType(CourseViewType):
     is_default = False    # A static tab is never added to a course by default
 
     @classmethod
-    def is_enabled(cls, course, django_settings, user=None):  # pylint: disable=unused-argument
+    def is_enabled(cls, course, user=None):  # pylint: disable=unused-argument
         """
         Static tabs are viewable to everyone, even anonymous users.
         """
@@ -220,8 +220,8 @@ class ExternalDiscussionCourseViewType(EnrolledCourseViewType):
                 key_checker(['link'])(tab_dict, raise_error))
 
     @classmethod
-    def is_enabled(cls, course, django_settings, user=None):  # pylint: disable=unused-argument
-        if not super(ExternalDiscussionCourseViewType, cls).is_enabled(course, settings, user=user):
+    def is_enabled(cls, course, user=None):  # pylint: disable=unused-argument
+        if not super(ExternalDiscussionCourseViewType, cls).is_enabled(course, user=user):
             return False
         return course.discussion_link
 
@@ -311,7 +311,7 @@ def get_course_tab_list(request, course):
     Retrieves the course tab list from xmodule.tabs and manipulates the set as necessary
     """
     user = request.user
-    xmodule_tab_list = CourseTabList.iterate_displayable(course, settings, user=user)
+    xmodule_tab_list = CourseTabList.iterate_displayable(course, user=user)
 
     # Now that we've loaded the tabs for this course, perform the Entrance Exam work.
     # If the user has to take an entrance exam, we'll need to hide away all but the
@@ -342,7 +342,7 @@ def _get_dynamic_tabs(course, user):
     for tab_type in CourseViewTypeManager.get_course_view_types():
         if getattr(tab_type, "is_dynamic", False):
             tab = tab_type.create_tab(dict())
-            if tab.is_enabled(course, settings, user=user):
+            if tab.is_enabled(course, user=user):
                 dynamic_tabs.append(tab)
     dynamic_tabs.sort(key=lambda dynamic_tab: dynamic_tab.name)
     return dynamic_tabs

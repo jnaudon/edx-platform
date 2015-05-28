@@ -8,6 +8,7 @@ import logging
 import xml.sax.saxutils as saxutils
 
 from django.contrib.auth.decorators import login_required
+from django.conf import settings
 from django.core.context_processors import csrf
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import User
@@ -60,16 +61,16 @@ class DiscussionCourseViewType(CourseViewType):
     view_name = 'django_comment_client.forum.views.forum_form_discussion'
 
     @classmethod
-    def is_enabled(cls, course, django_settings, user=None):
+    def is_enabled(cls, course, user=None):
         has_course_access = True
         if user:
             has_course_access = (has_access(user, 'staff', course) or
                                  CourseEnrollment.is_enrolled(user, course.id))
 
-        if django_settings.FEATURES.get('CUSTOM_COURSES_EDX', False):
+        if settings.FEATURES.get('CUSTOM_COURSES_EDX', False):
             if get_current_ccx():
                 return False
-        return django_settings.FEATURES.get('ENABLE_DISCUSSION_SERVICE') and has_course_access
+        return settings.FEATURES.get('ENABLE_DISCUSSION_SERVICE') and has_course_access
 
 
 def _attr_safe_json(obj):

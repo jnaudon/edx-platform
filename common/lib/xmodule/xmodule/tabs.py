@@ -57,7 +57,7 @@ class CourseTab(object):
 
         self.link_func = link_func
 
-    def is_enabled(self, course, settings, user=None):  # pylint: disable=unused-argument
+    def is_enabled(self, course, user=None):  # pylint: disable=unused-argument
         """
         Determines whether the tab is enabled for the given course and a particular user.
         This method is to be overridden by subclasses when applicable.  The base class
@@ -65,13 +65,6 @@ class CourseTab(object):
 
         Args:
             course: An xModule CourseDescriptor
-
-            settings: The configuration settings, including values for:
-             WIKI_ENABLED
-             FEATURES['ENABLE_DISCUSSION_SERVICE']
-             FEATURES['ENABLE_EDXNOTES']
-             FEATURES['ENABLE_STUDENT_NOTES']
-             FEATURES['ENABLE_TEXTBOOK']
 
             user: An optional user for whom the tab will be displayed. If none,
                 then the code should assume a staff user or an author.
@@ -281,13 +274,13 @@ class CourseTabList(List):
         return next((tab for tab in tab_list if tab.tab_id == tab_id), None)
 
     @staticmethod
-    def iterate_displayable(course, settings, user=None, inline_collections=True):
+    def iterate_displayable(course, user=None, inline_collections=True):
         """
         Generator method for iterating through all tabs that can be displayed for the given course and
         the given user with the provided access settings.
         """
         for tab in course.tabs:
-            if tab.is_enabled(course, settings, user=user) and (not user or not tab.is_hideable or not tab.is_hidden):
+            if tab.is_enabled(course, user=user) and (not user or not tab.is_hideable or not tab.is_hidden):
                 if tab.is_collection:
                     # If rendering inline that add each item in the collection,
                     # else just show the tab itself as long as it is not empty.

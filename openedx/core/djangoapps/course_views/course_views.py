@@ -26,14 +26,12 @@ class CourseViewType(object):
     is_hideable = False    # True if this course view's visibility can be toggled by the author
 
     @classmethod
-    def is_enabled(cls, course, django_settings, user=None):  # pylint: disable=unused-argument
+    def is_enabled(cls, course, user=None):  # pylint: disable=unused-argument
         """Returns true if this course view is enabled in the course.
 
         Args:
             course (CourseDescriptor): the course using the feature
-            settings (dict): a dict of configuration settings
-
-            user (User): the user interacting with the course
+            user (User): an optional user interacting with the course (defaults to None)
         """
         raise NotImplementedError()
 
@@ -108,10 +106,10 @@ class CourseViewTab(CourseTab):
         self.is_collection = course_view_type.is_collection if hasattr(course_view_type, 'is_collection') else False
         self.is_movable = course_view_type.is_movable
 
-    def is_enabled(self, course, settings, user=None):
-        if not super(CourseViewTab, self).is_enabled(course, settings, user=user):
+    def is_enabled(self, course, user=None):
+        if not super(CourseViewTab, self).is_enabled(course, user=user):
             return False
-        return self.course_view_type.is_enabled(course, settings, user=user)
+        return self.course_view_type.is_enabled(course, user=user)
 
     def __getitem__(self, key):
         if key == 'is_hidden':

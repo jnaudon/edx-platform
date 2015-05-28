@@ -1009,7 +1009,7 @@ def _refresh_course_tabs(request, course_module):
     # Additionally update any tabs that are provided by non-dynamic course views
     for tab_type in CourseViewTypeManager.get_course_view_types():
         if issubclass(tab_type, CourseViewType) and not tab_type.is_dynamic and tab_type.is_default:
-            tab_enabled = tab_type.is_enabled(course_module, settings, user=request.user)
+            tab_enabled = tab_type.is_enabled(course_module, user=request.user)
             update_tab(course_tabs, tab_type, tab_enabled)
 
     # Save the tabs into the course if they have been changed

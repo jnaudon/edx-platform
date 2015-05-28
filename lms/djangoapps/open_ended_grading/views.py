@@ -75,7 +75,7 @@ class StaffGradingTab(CourseViewType):
     view_name = "staff_grading"
 
     @classmethod
-    def is_enabled(cls, course, django_settings, user=None):  # pylint: disable=unused-argument
+    def is_enabled(cls, course, user=None):  # pylint: disable=unused-argument
         if user and not has_access(user, 'staff', course, course.id):
             return False
         return "combinedopenended" in course.advanced_modules
@@ -92,8 +92,8 @@ class PeerGradingTab(EnrolledCourseViewType):
     view_name = "peer_grading"
 
     @classmethod
-    def is_enabled(cls, course, settings, user=None):  # pylint: disable=unused-argument
-        if not super(PeerGradingTab, cls).is_enabled(course, settings, user=user):
+    def is_enabled(cls, course, user=None):  # pylint: disable=unused-argument
+        if not super(PeerGradingTab, cls).is_enabled(course, user=user):
             return False
         return "combinedopenended" in course.advanced_modules
 
@@ -109,8 +109,8 @@ class OpenEndedGradingTab(EnrolledCourseViewType):
     view_name = "open_ended_notifications"
 
     @classmethod
-    def is_enabled(cls, course, settings, user=None):  # pylint: disable=unused-argument
-        if not super(OpenEndedGradingTab, cls).is_enabled(course, settings, user=user):
+    def is_enabled(cls, course, user=None):  # pylint: disable=unused-argument
+        if not super(OpenEndedGradingTab, cls).is_enabled(course, user=user):
             return False
         return "combinedopenended" in course.advanced_modules
 

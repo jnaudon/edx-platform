@@ -34,8 +34,6 @@ class TabTestCase(ModuleStoreTestCase):
 
         self.course = CourseFactory.create(org='edX', course='toy', run='2012_Fall')
         self.fake_dict_tab = {'fake_key': 'fake_value'}
-        self.settings = MagicMock()
-        self.settings.FEATURES = {}
         self.reverse = lambda name, args: "name/{0}/args/{1}".format(name, ",".join(str(a) for a in args))
         self.books = None
 
@@ -50,11 +48,11 @@ class TabTestCase(ModuleStoreTestCase):
         user.is_authenticated = lambda: is_authenticated
         return user
 
-    def is_tab_enabled(self, tab, course, settings, user):
+    def is_tab_enabled(self, tab, course, user):
         """
         Returns true if the specified tab is enabled.
         """
-        return tab.is_enabled(course, settings, user=user)
+        return tab.is_enabled(course, user=user)
 
     def set_up_books(self, num_books):
         """Initializes the textbooks in the course and adds the given number of books to each textbook"""
@@ -140,16 +138,16 @@ class TabTestCase(ModuleStoreTestCase):
         """Checks can display results for various users"""
         if for_staff_only:
             user = self.create_mock_user(is_authenticated=True, is_staff=True, is_enrolled=True)
-            self.assertEquals(expected_value, self.is_tab_enabled(tab, self.course, self.settings, user))
+            self.assertEquals(expected_value, self.is_tab_enabled(tab, self.course, user))
         if for_authenticated_users_only:
             user = self.create_mock_user(is_authenticated=True, is_staff=False, is_enrolled=False)
-            self.assertEquals(expected_value, self.is_tab_enabled(tab, self.course, self.settings, user))
+            self.assertEquals(expected_value, self.is_tab_enabled(tab, self.course, user))
         if not for_staff_only and not for_authenticated_users_only and not for_enrolled_users_only:
             user = self.create_mock_user(is_authenticated=False, is_staff=False, is_enrolled=False)
-            self.assertEquals(expected_value, self.is_tab_enabled(tab, self.course, self.settings, user))
+            self.assertEquals(expected_value, self.is_tab_enabled(tab, self.course, user))
         if for_enrolled_users_only:
             user = self.create_mock_user(is_authenticated=True, is_staff=False, is_enrolled=True)
-            self.assertEquals(expected_value, self.is_tab_enabled(tab, self.course, self.settings, user))
+            self.assertEquals(expected_value, self.is_tab_enabled(tab, self.course, user))
 
     def check_get_and_set_methods(self, tab):
         """Test __getitem__ and __setitem__ calls"""
@@ -192,14 +190,14 @@ class TextbooksTestCase(TabTestCase):
         ])
         self.num_textbooks = self.num_textbook_tabs * len(self.books)
 
+    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_TEXTBOOK": True})
     def test_textbooks_enabled(self):
 
         type_to_reverse_name = {'textbook': 'book', 'pdftextbook': 'pdf_book', 'htmltextbook': 'html_book'}
 
-        self.settings.FEATURES['ENABLE_TEXTBOOK'] = True
         num_textbooks_found = 0
         user = self.create_mock_user(is_authenticated=True, is_staff=False, is_enrolled=True)
-        for tab in xmodule_tabs.CourseTabList.iterate_displayable(self.course, self.settings, user=user):
+        for tab in xmodule_tabs.CourseTabList.iterate_displayable(self.course, user=user):
             # verify all textbook type tabs
             if tab.type == 'single_textbook':
                 book_type, book_index = tab.tab_id.split("/", 1)
@@ -459,11 +457,10 @@ class TextBookCourseViewsTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase):
                 num_of_textbooks_found += 1
         self.assertEqual(num_of_textbooks_found, self.num_textbooks)
 
+    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_TEXTBOOK": False})
     def test_textbooks_disabled(self):
-
-        with self.settings(FEATURES={'ENABLE_TEXTBOOK': False}):
-            tab = xmodule_tabs.CourseTab.from_json({'type': 'textbooks'})
-            self.assertFalse(tab.is_enabled(self.course, settings, self.user))
+        tab = xmodule_tabs.CourseTab.from_json({'type': 'textbooks'})
+        self.assertFalse(tab.is_enabled(self.course, self.user))
 
 
 class TabListTestCase(TabTestCase):
@@ -593,12 +590,13 @@ class CourseTabListTestCase(TabListTestCase):
         self.assertFalse(self.has_tab(self.course.tabs, 'external_discussion'))
         self.assertTrue(self.has_tab(self.course.tabs, 'discussion'))
 
+    @patch.dict("django.conf.settings.FEATURES", {
+        "ENABLE_TEXTBOOK": True,
+        "ENABLE_DISCUSSION_SERVICE": True,
+        "ENABLE_STUDENT_NOTES": True,
+        "ENABLE_EDXNOTES": True,
+    })
     def test_iterate_displayable(self):
-        # enable all tab types
-        self.settings.FEATURES['ENABLE_TEXTBOOK'] = True
-        self.settings.FEATURES['ENABLE_DISCUSSION_SERVICE'] = True
-        self.settings.FEATURES['ENABLE_STUDENT_NOTES'] = True
-        self.settings.FEATURES['ENABLE_EDXNOTES'] = True
         self.course.hide_progress_tab = False
 
         # create 1 book per textbook type
@@ -610,7 +608,6 @@ class CourseTabListTestCase(TabListTestCase):
         # enumerate the tabs with no user
         for i, tab in enumerate(xmodule_tabs.CourseTabList.iterate_displayable(
                 self.course,
-                self.settings,
                 inline_collections=False
         )):
             self.assertEquals(tab.type, self.course.tabs[i].type)
@@ -618,11 +615,7 @@ class CourseTabListTestCase(TabListTestCase):
         # enumerate the tabs with a staff user
         user = UserFactory(is_staff=True)
         CourseEnrollment.enroll(user, self.course.id)
-        for i, tab in enumerate(xmodule_tabs.CourseTabList.iterate_displayable(
-                self.course,
-                self.settings,
-                user=user
-        )):
+        for i, tab in enumerate(xmodule_tabs.CourseTabList.iterate_displayable(self.course, user=user)):
             if getattr(tab, 'is_collection_item', False):
                 # a collection item was found as a result of a collection tab
                 self.assertTrue(getattr(self.course.tabs[i], 'is_collection', False))
@@ -633,14 +626,14 @@ class CourseTabListTestCase(TabListTestCase):
         # test including non-empty collections
         self.assertIn(
             {'type': 'html_textbooks'},
-            list(xmodule_tabs.CourseTabList.iterate_displayable(self.course, self.settings, inline_collections=False)),
+            list(xmodule_tabs.CourseTabList.iterate_displayable(self.course, inline_collections=False)),
         )
 
         # test not including empty collections
         self.course.html_textbooks = []
         self.assertNotIn(
             {'type': 'html_textbooks'},
-            list(xmodule_tabs.CourseTabList.iterate_displayable(self.course, self.settings, inline_collections=False)),
+            list(xmodule_tabs.CourseTabList.iterate_displayable(self.course, inline_collections=False)),
         )
 
     def test_get_tab_by_methods(self):
@@ -741,15 +734,16 @@ class DiscussionLinkTestCase(TabTestCase):
             self.assertEquals(
                 (
                     discussion_tab is not None and
-                    self.is_tab_enabled(discussion_tab, self.course, self.settings, user) and
+                    self.is_tab_enabled(discussion_tab, self.course, user) and
                     (discussion_tab.link_func(self.course, self._reverse(self.course)) == expected_discussion_link)
                 ),
                 expected_can_display_value
             )
 
+
+    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": False})
     def test_explicit_discussion_link(self):
         """Test that setting discussion_link overrides everything else"""
-        self.settings.FEATURES['ENABLE_DISCUSSION_SERVICE'] = False
         self.check_discussion(
             tab_list=self.tabs_with_discussion,
             discussion_link_in_course="other_discussion_link",
@@ -757,9 +751,9 @@ class DiscussionLinkTestCase(TabTestCase):
             expected_can_display_value=True,
         )
 
+    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": False})
     def test_discussions_disabled(self):
         """Test that other cases return None with discussions disabled"""
-        self.settings.FEATURES['ENABLE_DISCUSSION_SERVICE'] = False
         for tab_list in [[], self.tabs_with_discussion, self.tabs_without_discussion]:
             self.check_discussion(
                 tab_list=tab_list,
@@ -767,26 +761,26 @@ class DiscussionLinkTestCase(TabTestCase):
                 expected_can_display_value=False,
             )
 
+    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def test_tabs_with_discussion(self):
         """Test a course with a discussion tab configured"""
-        self.settings.FEATURES['ENABLE_DISCUSSION_SERVICE'] = True
         self.check_discussion(
             tab_list=self.tabs_with_discussion,
             expected_discussion_link="default_discussion_link",
             expected_can_display_value=True,
         )
 
+    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def test_tabs_without_discussion(self):
         """Test a course with tabs configured but without a discussion tab"""
-        self.settings.FEATURES['ENABLE_DISCUSSION_SERVICE'] = True
         self.check_discussion(
             tab_list=self.tabs_without_discussion,
             expected_discussion_link=not None,
             expected_can_display_value=False,
         )
 
+    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def test_tabs_enrolled_or_staff(self):
-        self.settings.FEATURES['ENABLE_DISCUSSION_SERVICE'] = True
         for is_enrolled, is_staff in [(True, False), (False, True)]:
             self.check_discussion(
                 tab_list=self.tabs_with_discussion,
@@ -796,8 +790,8 @@ class DiscussionLinkTestCase(TabTestCase):
                 is_staff=is_staff
             )
 
+    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def test_tabs_not_enrolled_or_staff(self):
-        self.settings.FEATURES['ENABLE_DISCUSSION_SERVICE'] = True
         is_enrolled = is_staff = False
         self.check_discussion(
             tab_list=self.tabs_with_discussion,

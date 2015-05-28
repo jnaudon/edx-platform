@@ -17,7 +17,7 @@ class EdxNotesCourseViewType(EnrolledCourseViewType):
     view_name = "edxnotes"
 
     @classmethod
-    def is_enabled(cls, course, settings, user=None):  # pylint: disable=unused-argument
+    def is_enabled(cls, course, user=None):  # pylint: disable=unused-argument
         """Returns true if the edX Notes feature is enabled in the course.
 
         Args:
@@ -27,4 +27,4 @@ class EdxNotesCourseViewType(EnrolledCourseViewType):
         """
         if not course.edxnotes:
             return False
-        return super(EdxNotesCourseViewType, cls).is_enabled(course, settings, user=user)
+        return super(EdxNotesCourseViewType, cls).is_enabled(course, user=user)
