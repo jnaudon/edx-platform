@@ -1155,9 +1155,7 @@ class CreateCommentTest(CommentsServiceMockMixin, UrlResetMixin, ModuleStoreTest
     @mock.patch("eventtracking.tracker.emit")
     def test_success(self, parent_id, mock_emit):
         if parent_id:
-            self.register_get_comment_response(
-                make_minimal_cs_comment({"id": parent_id, "thread_id": "test_thread"})
-            )
+            self.register_get_comment_response({"id": parent_id, "thread_id": "test_thread"})
         self.register_post_comment_response(
             {
                 "id": "test_comment",

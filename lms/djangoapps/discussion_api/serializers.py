@@ -288,7 +288,7 @@ class CommentSerializer(_ContentSerializer):
         return attrs
 
     def restore_object(self, attrs, instance=None):
-        if instance:
+        if instance:  # pragma: no cover
             raise ValueError("CommentSerializer cannot be used for updates.")
         return Comment(
             course_id=self.context["thread"]["course_id"],

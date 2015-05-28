@@ -14,8 +14,6 @@ from discussion_api.forms import ThreadCreateExtrasForm
 from discussion_api.pagination import get_paginated_data
 from discussion_api.serializers import CommentSerializer, ThreadSerializer, get_context
 from django_comment_client.base.views import (
-    COMMENT_CREATED_EVENT_NAME,
-    RESPONSE_CREATED_EVENT_NAME,
     THREAD_CREATED_EVENT_NAME,
     get_comment_created_event_data,
     get_comment_created_event_name,
@@ -270,9 +268,10 @@ def create_thread(request, thread_data):
 
     return ret
 
+
 def create_comment(request, comment_data):
     """
-    Create a thread.
+    Create a comment.
 
     Parameters:
 

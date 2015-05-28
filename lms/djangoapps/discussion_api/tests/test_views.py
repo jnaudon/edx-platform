@@ -475,8 +475,8 @@ class CommentViewSetCreateTest(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
         self.assertEqual(response.status_code, 200)
         response_data = json.loads(response.content)
         self.assertEqual(response_data, expected_response_data)
-        self.assertEqual(urlparse(
-            httpretty.last_request().path).path,
+        self.assertEqual(
+            urlparse(httpretty.last_request().path).path,
             "/api/v1/threads/test_thread/comments"
         )
         self.assertEqual(

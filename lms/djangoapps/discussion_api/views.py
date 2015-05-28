@@ -278,4 +278,8 @@ class CommentViewSet(_ViewMixin, DeveloperErrorViewMixin, ViewSet):
         )
 
     def create(self, request):
+        """
+        Implements the POST method for the list endpoint as described in the
+        class docstring.
+        """
         return Response(create_comment(request, request.DATA))

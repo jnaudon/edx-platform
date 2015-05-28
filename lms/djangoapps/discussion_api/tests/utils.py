@@ -75,14 +75,14 @@ class CommentsServiceMockMixin(object):
             response_data = make_minimal_cs_comment(
                 {key: val[0] for key, val in request.parsed_body.items()}
             )
-            response_data.update(response_overrides)
+            response_data.update(response_overrides or {})
             return (200, headers, json.dumps(response_data))
 
         if thread_id and not parent_id:
             url = "http://localhost:4567/api/v1/threads/{}/comments".format(thread_id)
         elif parent_id and not thread_id:
             url = "http://localhost:4567/api/v1/comments/{}".format(parent_id)
-        else:
+        else:  # pragma: no cover
             raise ValueError("Exactly one of thread_id and parent_id must be provided.")
 
         httpretty.register_uri(httpretty.POST, url, body=callback)
@@ -99,10 +99,11 @@ class CommentsServiceMockMixin(object):
             status=status_code
         )
 
-    def register_get_comment_response(self, comment):
+    def register_get_comment_response(self, response_overrides):
         """
         Register a mock response for GET on the CS comment instance endpoint.
         """
+        comment = make_minimal_cs_comment(response_overrides)
         httpretty.register_uri(
             httpretty.GET,
             "http://localhost:4567/api/v1/comments/{id}".format(id=comment["id"]),

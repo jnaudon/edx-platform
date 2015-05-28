@@ -39,7 +39,7 @@ TRACKING_MAX_FORUM_BODY = 2000
 
 THREAD_CREATED_EVENT_NAME = "edx.forum.thread.created"
 RESPONSE_CREATED_EVENT_NAME = 'edx.forum.response.created'
-COMMENT_CREATED_EVENT_NAME= 'edx.forum.comment.created'
+COMMENT_CREATED_EVENT_NAME = 'edx.forum.comment.created'
 
 
 def permitted(fn):
@@ -122,10 +122,15 @@ def get_thread_created_event_data(thread, followed):
 
 
 def get_comment_created_event_name(comment):
+    """Get the appropriate event name for creating a response/comment"""
     return COMMENT_CREATED_EVENT_NAME if comment.get("parent_id") else RESPONSE_CREATED_EVENT_NAME
 
 
 def get_comment_created_event_data(comment, commentable_id, followed):
+    """
+    Get the event data payload for comment creation (excluding fields populated
+    by track_forum_event)
+    """
     event_data = {
         'discussion': {'id': comment.thread_id},
         'commentable_id': commentable_id,

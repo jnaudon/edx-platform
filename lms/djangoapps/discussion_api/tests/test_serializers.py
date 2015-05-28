@@ -8,7 +8,6 @@ import ddt
 import httpretty
 import mock
 
-from django.core.exceptions import NON_FIELD_ERRORS
 from django.test.client import RequestFactory
 
 from discussion_api.serializers import CommentSerializer, ThreadSerializer, get_context
@@ -462,6 +461,10 @@ class CommentSerializerDeserializationTest(CommentsServiceMockMixin, ModuleStore
         }
 
     def save_and_reserialize(self, data, parent_id=None):
+        """
+        Create a serializer with the given data, ensure that it is valid, save
+        the result, and return the full comment data from the serializer.
+        """
         context = get_context(
             self.course,
             self.request,
@@ -476,9 +479,7 @@ class CommentSerializerDeserializationTest(CommentsServiceMockMixin, ModuleStore
     @ddt.data(None, "test_parent")
     def test_success(self, parent_id):
         if parent_id:
-            self.register_get_comment_response(
-                make_minimal_cs_comment({"thread_id": "test_thread", "id": parent_id})
-            )
+            self.register_get_comment_response({"thread_id": "test_thread", "id": parent_id})
         self.register_post_comment_response(
             {"id": "test_comment"},
             thread_id=(None if parent_id else "test_thread"),
@@ -516,11 +517,8 @@ class CommentSerializerDeserializationTest(CommentsServiceMockMixin, ModuleStore
         )
 
     def test_parent_id_wrong_thread(self):
-        self.register_get_comment_response(
-            make_minimal_cs_comment({"thread_id": "different_thread", "id": "test_parent"})
-        )
+        self.register_get_comment_response({"thread_id": "different_thread", "id": "test_parent"})
         context = get_context(self.course, self.request, make_minimal_cs_thread(), "test_parent")
-        context["parent_id"] = "test_parent"
         serializer = CommentSerializer(data=self.minimal_data, context=context)
         self.assertFalse(serializer.is_valid())
         self.assertEqual(
