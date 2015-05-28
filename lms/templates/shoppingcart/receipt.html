@@ -185,7 +185,7 @@ from courseware.courses import course_image_url, get_course_about_section, get_c
                 <b>${_('Card Type')}:</b>
                 <span>
                   % if order.bill_to_cardtype:
-                    ${_('{bill_to_cardtype}'.format(bill_to_cardtype=order.bill_to_cardtype))}
+                    ${order.bill_to_cardtype}
                   % else:
                     ${_('N/A')}
                   % endif
@@ -257,7 +257,7 @@ from courseware.courses import course_image_url, get_course_about_section, get_c
                 <b>${_('State')}:</b>
                 <span>
                   % if order.bill_to_state:
-                    ${_('{bill_to_state}'.format(bill_to_state=order.bill_to_state))}
+                    ${order.bill_to_state}
                   % else:
                     ${_('N/A')}
                   % endif
@@ -269,7 +269,7 @@ from courseware.courses import course_image_url, get_course_about_section, get_c
                 <b>${_('Country')}:</b>
                 <span>
                   % if order.bill_to_country:
-                    ${_('{bill_to_country}'.format(bill_to_country=order.bill_to_country.upper()))}
+                    ${order.bill_to_country}
                   % else:
                     ${_('N/A')}
                   % endif
