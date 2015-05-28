@@ -48,7 +48,6 @@ from contentstore.utils import (
     reverse_library_url,
     reverse_url,
     remove_all_instructors,
-    EXTRA_TAB_PANELS,
 )
 from models.settings.course_details import CourseDetails, CourseSettingsEncoder
 from models.settings.course_grading import CourseGradingModel
@@ -57,7 +56,6 @@ from util.json_request import expect_json
 from util.string_utils import _has_non_ascii_characters
 from student.auth import has_studio_write_access, has_studio_read_access
 from .component import (
-    NOTE_COMPONENT_TYPES,
     SPLIT_TEST_COMPONENT_TYPE,
     ADVANCED_COMPONENT_TYPES,
 )
@@ -81,7 +79,6 @@ from course_action_state.models import CourseRerunState, CourseRerunUIStateManag
 from course_action_state.managers import CourseActionStateItemNotFoundError
 from microsite_configuration import microsite
 from xmodule.course_module import CourseFields
-from xmodule.split_test_module import get_split_user_partitions
 from student.auth import has_course_author_access
 
 from util.milestones_helpers import (
@@ -987,25 +984,6 @@ def grading_handler(request, course_key_string, grader_index=None):
                 return JsonResponse()
 
 
-def is_advanced_component_present(course, advanced_components):
-    """
-    Return True when one of `advanced_components` is present in the request.
-
-    raises TypeError
-    when request.ADVANCED_COMPONENT_POLICY_KEY is malformed (not iterable)
-    """
-    for ac_type in advanced_components:
-        if ac_type in course.advanced_modules and ac_type in ADVANCED_COMPONENT_TYPES:
-            return True
-
-
-def is_field_value_true(request, field_list):
-    """
-    Return True when one of field values is set to True by request
-    """
-    return any([request.json.get(field, {}).get('value') for field in field_list])
-
-
 def _refresh_course_tabs(request, course_module):
     """
     Automatically adds/removes tabs if changes to the course require them.
@@ -1015,7 +993,10 @@ def _refresh_course_tabs(request, course_module):
         """
         Adds or removes a course tab based upon whether it is enabled.
         """
-        tab_panel = _get_tab_panel_for_type(tab_type)
+        tab_panel = {
+            "type": tab_type.name,
+            "name": tab_type.title,
+        }
         has_tab = tab_panel in tabs
         if tab_enabled:
             if not has_tab:
@@ -1034,19 +1015,6 @@ def _refresh_course_tabs(request, course_module):
     # Save the tabs into the course if they have been changed
     if not course_tabs == course_module.tabs:
         course_module.tabs = course_tabs
-
-
-def _get_tab_panel_for_type(tab_type):
-    """
-    Returns a tab panel representation for the specified tab type.
-    """
-    tab_panel = EXTRA_TAB_PANELS.get(tab_type)
-    if tab_panel:
-        return tab_panel
-    return {
-        "name": tab_type.title,
-        "type": tab_type.name
-    }
 
 
 @login_required

@@ -14,7 +14,7 @@ from django.conf import settings
 
 from models.settings.course_details import (CourseDetails, CourseSettingsEncoder)
 from models.settings.course_grading import CourseGradingModel
-from contentstore.utils import EXTRA_TAB_PANELS, reverse_course_url, reverse_usage_url
+from contentstore.utils import reverse_course_url, reverse_usage_url
 from xmodule.modulestore.tests.factories import CourseFactory
 
 from models.settings.course_metadata import CourseMetadata
@@ -919,19 +919,50 @@ class CourseMetadataEditingTest(CourseTestCase):
         """
         Test that adding and removing specific advanced components adds and removes tabs.
         """
-        self.assertNotIn(EXTRA_TAB_PANELS.get("open_ended"), self.course.tabs)
-        self.assertNotIn(EXTRA_TAB_PANELS.get("notes"), self.course.tabs)
+        open_ended_tab = {"type": "open_ended", "name": "Open Ended Panel"}
+        peer_grading_tab = {"type": "peer_grading", "name": "Peer grading"}
+        notes_tab = {"type": "notes", "name": "My Notes"}
+
+        # First ensure that none of the tabs are visible
+        self.assertNotIn(open_ended_tab, self.course.tabs)
+        self.assertNotIn(peer_grading_tab, self.course.tabs)
+        self.assertNotIn(notes_tab, self.course.tabs)
+
+        # Now add the "combinedopenended" component and verify that the tab has been added
         self.client.ajax_post(self.course_setting_url, {
             ADVANCED_COMPONENT_POLICY_KEY: {"value": ["combinedopenended"]}
         })
         course = modulestore().get_course(self.course.id)
-        self.assertIn(EXTRA_TAB_PANELS.get("open_ended"), course.tabs)
-        self.assertNotIn(EXTRA_TAB_PANELS.get("notes"), course.tabs)
+        self.assertIn(open_ended_tab, course.tabs)
+        self.assertIn(peer_grading_tab, course.tabs)
+        self.assertNotIn(notes_tab, course.tabs)
+
+        # Now enable student notes and verify that the "My Notes" tab has also been added
         self.client.ajax_post(self.course_setting_url, {
-            ADVANCED_COMPONENT_POLICY_KEY: {"value": []}
+            ADVANCED_COMPONENT_POLICY_KEY: {"value": ["combinedopenended", "notes"]}
         })
         course = modulestore().get_course(self.course.id)
-        self.assertNotIn(EXTRA_TAB_PANELS.get("open_ended"), course.tabs)
+        self.assertIn(open_ended_tab, course.tabs)
+        self.assertIn(peer_grading_tab, course.tabs)
+        self.assertIn(notes_tab, course.tabs)
+
+        # Now remove the "combinedopenended" component and verify that the tab is gone
+        self.client.ajax_post(self.course_setting_url, {
+            ADVANCED_COMPONENT_POLICY_KEY: {"value": ["notes"]}
+        })
+        course = modulestore().get_course(self.course.id)
+        self.assertNotIn(open_ended_tab, course.tabs)
+        self.assertNotIn(peer_grading_tab, course.tabs)
+        self.assertIn(notes_tab, course.tabs)
+
+        # Finally disable student notes and verify that the "My Notes" tab is gone
+        self.client.ajax_post(self.course_setting_url, {
+            ADVANCED_COMPONENT_POLICY_KEY: {"value": [""]}
+        })
+        course = modulestore().get_course(self.course.id)
+        self.assertNotIn(open_ended_tab, course.tabs)
+        self.assertNotIn(peer_grading_tab, course.tabs)
+        self.assertNotIn(notes_tab, course.tabs)
 
 
 class CourseGraderUpdatesTest(CourseTestCase):

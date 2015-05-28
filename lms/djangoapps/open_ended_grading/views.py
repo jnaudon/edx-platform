@@ -8,6 +8,7 @@ from openedx.core.djangoapps.course_views.course_views import CourseViewType
 
 from courseware.courses import get_course_with_access
 from courseware.access import has_access
+from courseware.tabs import EnrolledCourseViewType
 
 from xmodule.open_ended_grading_classes.grading_service_module import GradingServiceError
 import json
@@ -72,17 +73,16 @@ class StaffGradingTab(CourseViewType):
     name = 'staff_grading'
     title = _("Staff grading")
     view_name = "staff_grading"
+    is_dynamic = True
 
     @classmethod
     def is_enabled(cls, course, django_settings, user=None):  # pylint: disable=unused-argument
-        if "combinedopenended" not in course.advanced_modules:
+        if user and not has_access(user, 'staff', course, course.id):
             return False
-        if not user:
-            return True
-        return has_access(user, 'staff', course, course.id)
+        return "combinedopenended" in course.advanced_modules
 
 
-class PeerGradingTab(CourseViewType):
+class PeerGradingTab(EnrolledCourseViewType):
     """
     A tab for peer grading.
     """
@@ -94,14 +94,12 @@ class PeerGradingTab(CourseViewType):
 
     @classmethod
     def is_enabled(cls, course, settings, user=None):  # pylint: disable=unused-argument
-        if "combinedopenended" not in course.advanced_modules:
+        if not super(PeerGradingTab, cls).is_enabled(course, settings, user=user):
             return False
-        if not user:
-            return True
-        return user.is_authenticated()
+        return "combinedopenended" in course.advanced_modules
 
 
-class OpenEndedGradingTab(CourseViewType):
+class OpenEndedGradingTab(EnrolledCourseViewType):
     """
     A tab for open ended grading.
     """
@@ -113,11 +111,9 @@ class OpenEndedGradingTab(CourseViewType):
 
     @classmethod
     def is_enabled(cls, course, settings, user=None):  # pylint: disable=unused-argument
-        if "combinedopenended" not in course.advanced_modules:
+        if not super(OpenEndedGradingTab, cls).is_enabled(course, settings, user=user):
             return False
-        if not user:
-            return True
-        return user.is_authenticated()
+        return "combinedopenended" in course.advanced_modules
 
 
 @cache_control(no_cache=True, no_store=True, must_revalidate=True)

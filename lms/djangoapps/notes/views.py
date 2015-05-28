@@ -1,10 +1,10 @@
 from django.contrib.auth.decorators import login_required
 from django.http import Http404
 
-from openedx.core.djangoapps.course_views.course_views import CourseViewType
 from edxmako.shortcuts import render_to_response
 from opaque_keys.edx.locations import SlashSeparatedCourseKey
 from courseware.courses import get_course_with_access
+from courseware.tabs import EnrolledCourseViewType
 from notes.models import Note
 from notes.utils import notes_enabled_for_course
 from xmodule.annotator_token import retrieve_token
@@ -35,18 +35,17 @@ def notes(request, course_id):
     return render_to_response('notes.html', context)
 
 
-class NotesCourseViewType(CourseViewType):
+class NotesCourseViewType(EnrolledCourseViewType):
     """
     A tab for the course notes.
     """
     name = 'notes'
     title = _("My Notes")
     view_name = "notes"
-    is_default = False
-    is_dynamic = True
 
     @classmethod
     def is_enabled(cls, course, settings, user=None):
         if "notes" not in course.advanced_modules:
             return False
+
         return settings.FEATURES.get('ENABLE_STUDENT_NOTES') and (user is None or user.is_authenticated())

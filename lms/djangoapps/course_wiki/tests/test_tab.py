@@ -20,13 +20,6 @@ class WikiTabTestCase(ModuleStoreTestCase):
         self.instructor = AdminFactory.create()
         self.user = UserFactory()
 
-    def has_wiki_tab(self, user, course):
-        """Returns true if the "Instructor" tab is shown."""
-        request = RequestFactory().request()
-        request.user = user
-        tabs = get_course_tab_list(request, course)
-        return len([tab for tab in tabs if tab.name == 'Wiki']) == 1
-
     def get_wiki_tab(self, user, course):
         """Returns true if the "Wiki" tab is shown."""
         request = RequestFactory().request()
