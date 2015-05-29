@@ -740,7 +740,6 @@ class DiscussionLinkTestCase(TabTestCase):
                 expected_can_display_value
             )
 
-
     @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": False})
     def test_explicit_discussion_link(self):
         """Test that setting discussion_link overrides everything else"""

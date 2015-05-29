@@ -1,15 +1,43 @@
 """ Tests of specific tabs. """
 
-from mock import MagicMock
-import unittest
+from mock import patch, Mock
+from unittest import TestCase
 
 import xmodule.tabs as xmodule_tabs
-from student.tests.factories import UserFactory
-from xmodule.modulestore.tests.factories import CourseFactory
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+
+from openedx.core.djangoapps.course_views.course_views import CourseViewTypeManager
 
 
-class KeyCheckerTestCase(unittest.TestCase):
+class CourseViewTypeManagerTestCase(TestCase):
+    """Test cases for CourseViewTypeManager class"""
+
+    @patch('openedx.core.djangoapps.course_views.course_views.CourseViewTypeManager.get_available_plugins')
+    def test_get_course_view_types(self, get_available_plugins):
+        """
+        Verify that get_course_view_types sorts appropriately
+        """
+        def create_mock_plugin(name, priority):
+            """ Create a mock plugin with the specified name and priority. """
+            mock_plugin = Mock()
+            mock_plugin.name = name
+            mock_plugin.priority = priority
+            return mock_plugin
+        mock_plugins = {
+            "Last": create_mock_plugin(name="Last", priority=None),
+            "Duplicate1": create_mock_plugin(name="Duplicate", priority=None),
+            "Duplicate2": create_mock_plugin(name="Duplicate", priority=None),
+            "First": create_mock_plugin(name="First", priority=1),
+            "Second": create_mock_plugin(name="Second", priority=1),
+            "Third": create_mock_plugin(name="Third", priority=3),
+        }
+        get_available_plugins.return_value = mock_plugins
+        self.assertEqual(
+            [plugin.name for plugin in CourseViewTypeManager.get_course_view_types()],
+            ["First", "Second", "Third", "Duplicate", "Duplicate", "Last"]
+        )
+
+
+class KeyCheckerTestCase(TestCase):
     """Test cases for KeyChecker class"""
 
     def setUp(self):
@@ -27,7 +55,7 @@ class KeyCheckerTestCase(unittest.TestCase):
             xmodule_tabs.key_checker(self.invalid_keys)(self.dict_value)
 
 
-class NeedNameTestCase(unittest.TestCase):
+class NeedNameTestCase(TestCase):
     """Test cases for NeedName validator"""
 
     def setUp(self):
